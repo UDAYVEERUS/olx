@@ -1,30 +1,35 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { useAuth } from '@/context/AuthContext';
-import { useChat } from '@/context/ChatContext';
-import { Listing } from '@/types';
-import api from '@/lib/api';
-import { formatPrice, formatDate } from '@/lib/utils';
-import toast from 'react-hot-toast';
-import { 
-  ChevronLeftIcon, 
-  ChevronRightIcon, 
+// app/product/[id]/page.tsx
+
+"use client";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
+import { useAuth } from "@/context/AuthContext";
+import { useChat } from "@/context/ChatContext";
+import { Listing } from "@/types";
+import api from "@/lib/api";
+import { formatPrice, formatDate } from "@/lib/utils";
+import toast from "react-hot-toast";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
   MapPinIcon,
   ClockIcon,
   TagIcon,
   ChatBubbleLeftRightIcon,
   PhoneIcon,
-  EnvelopeIcon
-} from '@heroicons/react/24/outline';
+  EnvelopeIcon,
+} from "@heroicons/react/24/outline";
+import HowItWorksSection from "@/components/home/Howitworks";
+import StatsSection from "@/components/home/Stats";
+import FeaturesSection from "@/components/home/Features";
 
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const { createChat } = useChat();
-  
+
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -37,51 +42,52 @@ export default function ProductDetailPage() {
   const fetchListing = async () => {
     try {
       const response = await api.get(`/listings/${params.id}`);
-      // Handle nested response structure
-      const listingData = response.data?.data?.listing || response.data?.listing || response.data;
+      const listingData =
+        response.data?.data?.listing || response.data?.listing || response.data;
+
+      console.log("Fetched listing:", listingData); // DEBUG
       setListing(listingData);
     } catch (error) {
-      console.error('Error fetching listing:', error);
-      toast.error('Listing not found');
-      router.push('/');
+      console.error("Error fetching listing:", error);
+      toast.error("Listing not found");
+      router.push("/");
     } finally {
       setLoading(false);
     }
   };
 
   const handleStartChat = async () => {
-  if (!isAuthenticated) {
-    toast.error('Please login to start a chat');
-    router.push('/auth/login');
-    return;
-  }
+    if (!isAuthenticated) {
+      toast.error("Please login to start a chat");
+      router.push("/auth/login");
+      return;
+    }
 
-  if (!listing || !user) {
-    toast.error('Unable to start chat');
-    return;
-  }
+    if (!listing || !user) {
+      toast.error("Unable to start chat");
+      return;
+    }
 
-  // Check if trying to chat with yourself
-  const sellerId = typeof listing.sellerId === 'object' ? listing.sellerId._id : listing.sellerId;
-  if (user._id === sellerId) {
-    toast.error('You cannot chat with yourself');
-    return;
-  }
+    const sellerId =
+      typeof listing.seller === "object" ? listing.seller._id : listing.seller;
 
-  try {
-    console.log('Creating chat with listing:', listing._id); // DEBUG
-    const chatId = await createChat(user._id, sellerId, listing._id);
-    console.log('Chat created, ID:', chatId); // DEBUG
-    router.push(`/chat?chatId=${chatId}`);
-  } catch (error: any) {
-    console.error('Error starting chat:', error);
-    toast.error(error.message || 'Failed to start chat');
-  }
-};
+    if (user._id === sellerId) {
+      toast.error("You cannot chat with yourself");
+      return;
+    }
+
+    try {
+      const chatId = await createChat(listing._id);
+      router.push(`/chat?chatId=${chatId}`);
+    } catch (error: any) {
+      console.error("Error starting chat:", error);
+      toast.error(error.response?.data?.message || "Failed to start chat");
+    }
+  };
 
   const nextImage = () => {
     if (listing?.images) {
-      setCurrentImageIndex((prev) => 
+      setCurrentImageIndex((prev) =>
         prev === listing.images.length - 1 ? 0 : prev + 1
       );
     }
@@ -89,7 +95,7 @@ export default function ProductDetailPage() {
 
   const prevImage = () => {
     if (listing?.images) {
-      setCurrentImageIndex((prev) => 
+      setCurrentImageIndex((prev) =>
         prev === 0 ? listing.images.length - 1 : prev - 1
       );
     }
@@ -120,11 +126,11 @@ export default function ProductDetailPage() {
     );
   }
 
-  // Extract seller data safely
-  const seller = typeof listing.sellerId === 'object' ? listing.sellerId : null;
-  const sellerId = seller?._id || listing.sellerId;
-  const sellerName = seller?.name || 'Anonymous Seller';
-  const sellerPicture = seller?.picture;
+  // Extract seller data - handle both populated and non-populated cases
+  const seller = typeof listing.seller === "object" ? listing.seller : null;
+  const sellerId = seller?._id || listing.seller;
+  const sellerName = seller?.name || "Anonymous Seller";
+  const sellerPicture = seller?.picture || seller?.avatar;
   const sellerPhone = seller?.phone;
   const sellerEmail = seller?.email;
 
@@ -142,7 +148,7 @@ export default function ProductDetailPage() {
                   fill
                   className="object-cover"
                 />
-                
+
                 {listing.images.length > 1 && (
                   <>
                     <button
@@ -175,7 +181,7 @@ export default function ProductDetailPage() {
                   key={index}
                   onClick={() => setCurrentImageIndex(index)}
                   className={`relative aspect-square rounded-lg overflow-hidden ${
-                    index === currentImageIndex ? 'ring-2 ring-blue-500' : ''
+                    index === currentImageIndex ? "ring-2 ring-blue-500" : ""
                   }`}
                 >
                   <Image
@@ -206,7 +212,11 @@ export default function ProductDetailPage() {
             {listing.category && (
               <div className="flex items-center space-x-2">
                 <TagIcon className="h-5 w-5" />
-                <span>{typeof listing.category === 'object' ? listing.category.name : listing.category}</span>
+                <span>
+                  {typeof listing.category === "object"
+                    ? listing.category.name
+                    : listing.category}
+                </span>
               </div>
             )}
             <div className="flex items-center space-x-2">
@@ -262,44 +272,52 @@ export default function ProductDetailPage() {
                   <ChatBubbleLeftRightIcon className="h-5 w-5" />
                   <span>Start Chat</span>
                 </button>
-                
+
                 <button
                   onClick={() => setShowContactInfo(!showContactInfo)}
                   className="w-full border border-blue-600 text-blue-600 py-3 px-6 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
                 >
-                  {showContactInfo ? 'Hide Contact Info' : 'Show Contact Info'}
+                  {showContactInfo ? "Hide Contact Info" : "Show Contact Info"}
                 </button>
 
                 {showContactInfo && (
                   <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                    {sellerPhone && (
+                    {sellerPhone ? (
                       <div className="flex items-center space-x-2">
                         <PhoneIcon className="h-5 w-5 text-gray-600" />
-                        <a 
+                        <a
                           href={`tel:${sellerPhone}`}
                           className="text-blue-600 hover:underline"
                         >
                           {sellerPhone}
                         </a>
                       </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">
+                        Phone not available
+                      </p>
                     )}
-                    {sellerEmail && (
+                    {sellerEmail ? (
                       <div className="flex items-center space-x-2">
                         <EnvelopeIcon className="h-5 w-5 text-gray-600" />
-                        <a 
+                        <a
                           href={`mailto:${sellerEmail}`}
                           className="text-blue-600 hover:underline"
                         >
                           {sellerEmail}
                         </a>
                       </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">
+                        Email not available
+                      </p>
                     )}
                   </div>
                 )}
               </div>
             ) : !isAuthenticated ? (
               <button
-                onClick={() => router.push('/auth/login')}
+                onClick={() => router.push("/auth/login")}
                 className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
               >
                 Login to Contact Seller
@@ -311,6 +329,11 @@ export default function ProductDetailPage() {
             )}
           </div>
         </div>
+      </div>
+      {/* <HowItWorksSection /> */}
+      <div className="mt-4">
+        <FeaturesSection />
+        <StatsSection />
       </div>
     </div>
   );

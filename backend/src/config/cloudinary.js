@@ -1,50 +1,42 @@
-const { v2: cloudinary } = require('cloudinary');
-const streamifier = require('streamifier');
+// src/config/cloudinary.js
 
-// Configure Cloudinary
+const cloudinary = require('cloudinary').v2;
+const multer = require('multer');
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
-console.log("Cloudinary config:", {
-  cloud: process.env.CLOUDINARY_CLOUD_NAME,
-  key: process.env.CLOUDINARY_API_KEY ? '✅ loaded' : '❌ missing',
-  secret: process.env.CLOUDINARY_API_SECRET ? '✅ loaded' : '❌ missing',
+
+// Use memory storage for multer
+const storage = multer.memoryStorage();
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files allowed'), false);
+    }
+  }
 });
-// Upload function (works with buffer)
-const uploadToCloudinary = (buffer, folder = 'marketplace') => {
+
+const uploadToCloudinary = async (buffer, folder) => {
   return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        resource_type: 'image',
-        folder,
-        transformation: [
-          { width: 800, height: 600, crop: 'limit' },
-          { quality: 'auto:good' }
-        ]
-      },
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: folder || 'olx' },
       (error, result) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(result);
-        }
+        if (error) reject(error);
+        else resolve(result);
       }
     );
-
-    // ✅ Convert buffer to stream
-    streamifier.createReadStream(buffer).pipe(stream);
+    uploadStream.end(buffer);
   });
 };
 
-// Delete function
-const deleteFromCloudinary = (publicId) => {
-  return cloudinary.uploader.destroy(publicId);
-};
-
-module.exports = {
-  cloudinary,
-  uploadToCloudinary,
-  deleteFromCloudinary
-};
+module.exports = { upload, uploadToCloudinary };

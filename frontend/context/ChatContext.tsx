@@ -15,7 +15,7 @@ interface ChatState {
 
 interface ChatContextType extends ChatState {
   fetchChats: () => Promise<void>;
-  createChat: (buyerId: string, sellerId: string, listingId: string) => Promise<string>;
+  createChat: (listingId: string) => Promise<string>; // ✅ Updated
   setActiveChat: (chatId: string) => Promise<void>;
   sendMessage: (content: string) => void;
   joinChat: (chatId: string) => void;
@@ -185,22 +185,28 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const createChat = async (buyerId: string, sellerId: string, listingId: string): Promise<string> => {
-    try {
-      const response = await api.post('/chat', { buyerId, sellerId, listingId });
-      const chat = response.data?.data?.chat || response.data?.chat || response.data;
-      if (!chat || !chat._id) {
-        toast.error('Failed to create chat');
-        throw new Error('Invalid chat data');
-      }
-      dispatch({ type: 'ADD_CHAT', payload: chat });
-      return chat._id;
-    } catch (error) {
-      console.error('Error creating chat:', error);
+  const createChat = async (listingId: string): Promise<string> => {
+  try {
+    console.log('Creating chat for listing:', listingId);
+    
+    // Only send listingId - backend gets buyer from JWT token
+    const response = await api.post('/chat', { listingId });
+    
+    const chat = response.data?.data?.chat || response.data?.chat || response.data;
+    
+    if (!chat || !chat._id) {
       toast.error('Failed to create chat');
-      throw error;
+      throw new Error('Invalid chat data');
     }
-  };
+    
+    dispatch({ type: 'ADD_CHAT', payload: chat });
+    return chat._id;
+  } catch (error: any) {
+    console.error('Error creating chat:', error.response?.data || error);
+    toast.error(error.response?.data?.message || 'Failed to create chat');
+    throw error;
+  }
+};
 
   return (
     <ChatContext.Provider

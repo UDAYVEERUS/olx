@@ -60,18 +60,17 @@ const getListings = asyncHandler(async (req, res) => {
 // @desc    Get single listing
 // @route   GET /api/listings/:id
 // @access  Public
-const getListing = asyncHandler(async (req, res) => {
-  const listing = await Listing.findById(req.params.id)
-    .populate('category', 'name slug')
-    .populate('seller', 'name avatar phone email');
-
-  if (!listing || listing.status === 'deleted') {
+const getListingById = asyncHandler(async (req, res) => {
+  const listingId = req.params.id;
+  
+  const listing = await Listing.findById(listingId)
+    .populate('category', 'name')
+    .populate('seller', 'name email phone picture avatar'); // ✅ Populate seller
+  
+  if (!listing) {
     return sendError(res, 404, 'Listing not found');
   }
-
-  // Increment view count (don't wait for it)
-  Listing.findByIdAndUpdate(req.params.id, { $inc: { views: 1 } }).exec();
-
+  
   sendResponse(res, 200, { listing }, 'Listing retrieved successfully');
 });
 
@@ -260,7 +259,7 @@ const searchListings = asyncHandler(async (req, res) => {
 
 module.exports = {
   getListings,
-  getListing,
+  getListingById,
   createListing,
   updateListing,
   deleteListing,

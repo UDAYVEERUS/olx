@@ -1,14 +1,12 @@
+// src/routes/listings.js
+
 const express = require('express');
-const { protect, optionalAuth } = require('../middleware/auth');
-const { uploadMultiple } = require('../middleware/upload');
-const { 
-  validateListing, 
-  validateObjectId, 
-  validatePagination 
-} = require('../middleware/validation');
+const router = express.Router();
+const { protect } = require('../middleware/auth');
+const { upload } = require('../config/cloudinary');
 const {
   getListings,
-  getListing,
+  getListingById,
   createListing,
   updateListing,
   deleteListing,
@@ -16,19 +14,15 @@ const {
   searchListings
 } = require('../controllers/listingController');
 
-const router = express.Router();
+// Public routes - NO authentication required
+router.get('/search', searchListings);
+router.get('/:id', getListingById);
+router.get('/', getListings);
 
-// Public routes
-router.get('/', validatePagination, optionalAuth, getListings);
-router.get('/search', validatePagination, searchListings);
-
-// Protected routes - MUST come before /:id route
-router.post('/', protect, uploadMultiple('images'), validateListing, createListing);
-router.get('/user/my-listings', protect, validatePagination, getMyListings); // Move this before /:id
-
-// Dynamic routes LAST
-router.get('/:id', validateObjectId(), getListing);
-router.put('/:id', protect, validateObjectId(), uploadMultiple('images'), updateListing);
-router.delete('/:id', protect, validateObjectId(), deleteListing);
+// Protected routes - authentication required
+router.post('/', protect, upload.array('images', 5), createListing);
+router.put('/:id', protect, upload.array('images', 5), updateListing);
+router.delete('/:id', protect, deleteListing);
+router.get('/user/my-listings', protect, getMyListings);
 
 module.exports = router;

@@ -12,7 +12,7 @@ const server = http.createServer(app);
 // Socket.IO setup
 const io = socketIO(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'https://olx-ftfo.onrender.com',
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000/api',
     credentials: true
   }
 });
@@ -25,7 +25,7 @@ connectDB();
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'https://olx-ftfo.onrender.com',
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000/api',
   credentials: true
 }));
 app.use(express.json());

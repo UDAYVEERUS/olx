@@ -1,13 +1,15 @@
+// src/types/index.ts
+
 export interface User {
   _id: string;
   name: string;
   email: string;
   avatar?: string;
-  picture?: string;  // ✅ Must be included
+  picture?: string;
   phone?: string;
   isAdmin: boolean;
   isActive: boolean;
-  createdAt?: string;  // ✅ Must be included
+  createdAt?: string;
   updatedAt?: string;
 }
 
@@ -18,15 +20,18 @@ export interface Category {
   icon?: string;
   isActive: boolean;
 }
+
 export interface Listing {
   _id: string;
   title: string;
   description: string;
   price: number;
-  category: Category;
+  category: Category | string;
   images: string[];
-  sellerId: User | string;
+  seller: User | string;  // ✅ Changed from sellerId to seller
   location: string;
+  condition?: 'new' | 'like-new' | 'good' | 'fair' | 'poor';
+  isNegotiable?: boolean;
   status: 'active' | 'sold' | 'deleted' | 'pending';
   isPremium: boolean;
   createdAt: string;
