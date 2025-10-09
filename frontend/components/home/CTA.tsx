@@ -12,7 +12,7 @@ function CTASection() {
           <a href="/post-ad" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors shadow-lg hover:shadow-xl">
             Post Your Ad
           </a>
-          <a href="/categories" className="bg-white hover:bg-gray-50 text-blue-600 border-2 border-blue-600 px-8 py-4 rounded-lg font-semibold text-lg transition-colors">
+          <a href="/products" className="bg-white hover:bg-gray-50 text-blue-600 border-2 border-blue-600 px-8 py-4 rounded-lg font-semibold text-lg transition-colors">
             Browse Products
           </a>
         </div>
