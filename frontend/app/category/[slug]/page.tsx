@@ -8,33 +8,38 @@ import api from '@/lib/api';
 
 export default function CategoryPage() {
   const params = useParams();
-  const { listings, loading, filterByCategory } = useListings();
+  const { listings, loading: contextLoading, filterByCategory } = useListings();
   const [category, setCategory] = useState<Category | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true); // New state to prevent flash
 
   useEffect(() => {
     fetchCategoryAndListings();
   }, [params.slug]);
 
   const fetchCategoryAndListings = async () => {
+    setIsInitializing(true); // Start initialization
     try {
       // Get category by slug
       const categoryResponse = await api.get(`/categories/slug/${params.slug}`);
       const categoryData = categoryResponse.data?.data?.category || categoryResponse.data?.category || categoryResponse.data;
       
-      console.log('Category Data:', categoryData); // DEBUG
       setCategory(categoryData);
       
       // Filter listings by category ID
       if (categoryData._id) {
-        console.log('Filtering by category ID:', categoryData._id); // DEBUG
         await filterByCategory(categoryData._id);
       }
     } catch (error) {
       console.error('Error fetching category:', error);
+    } finally {
+      setIsInitializing(false); // End initialization
     }
   };
 
-  if (loading && !category) {
+  // Show loading state during initialization OR while context is loading
+  const isLoading = isInitializing || contextLoading;
+
+  if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="animate-pulse space-y-6">
@@ -68,20 +73,7 @@ export default function CategoryPage() {
         </div>
       )}
 
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
-              <div className="h-48 bg-gray-300"></div>
-              <div className="p-4 space-y-3">
-                <div className="h-4 bg-gray-300 rounded"></div>
-                <div className="h-6 bg-gray-300 rounded w-1/2"></div>
-                <div className="h-3 bg-gray-300 rounded"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : listings.length === 0 ? (
+      {listings.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-gray-400 text-6xl mb-4">🔍</div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
