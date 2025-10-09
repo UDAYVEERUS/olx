@@ -35,8 +35,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/post-ad" className="text-gray-300 hover:text-white transition-colors">
-                  Post Ad
+                <Link href="/products" className="text-gray-300 hover:text-white transition-colors">
+                  Products
                 </Link>
               </li>
               <li>
@@ -45,7 +45,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="text-gray-300 hover:text-white transition-colors">
+                <Link href="/about-us" className="text-gray-300 hover:text-white transition-colors">
                   About Us
                 </Link>
               </li>
@@ -57,22 +57,18 @@ export default function Footer() {
             <h3 className="text-lg font-semibold mb-4">Support</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/help" className="text-gray-300 hover:text-white transition-colors">
-                  Help Center
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-gray-300 hover:text-white transition-colors">
+                <Link href="/contact-us" className="text-gray-300 hover:text-white transition-colors">
                   Contact Us
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="text-gray-300 hover:text-white transition-colors">
+                <Link href="/privacy-policy" className="text-gray-300 hover:text-white transition-colors">
                   Privacy Policy
                 </Link>
               </li>
+              
               <li>
-                <Link href="/terms" className="text-gray-300 hover:text-white transition-colors">
+                <Link href="/terms-conditions" className="text-gray-300 hover:text-white transition-colors">
                   Terms of Service
                 </Link>
               </li>
@@ -81,7 +77,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-300">
-          <p>&copy; 2024 MarketPlace. All rights reserved.</p>
+          <p>&copy; 2025 MarketPlace. All rights reserved.</p>
         </div>
       </div>
     </footer>

@@ -12,6 +12,7 @@ interface ListingsState {
     page: number;
     limit: number;
     total: number;
+    pages: number;
   };
   filters: {
     category?: string;
@@ -37,7 +38,7 @@ const ListingsContext = createContext<ListingsContextType | undefined>(undefined
 
 type ListingsAction =
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_LISTINGS'; payload: { listings: Listing[]; total: number; page: number } }
+  | { type: 'SET_LISTINGS'; payload: { listings: Listing[]; total: number; pages: number; page: number } }
   | { type: 'SET_CATEGORIES'; payload: Category[] }
   | { type: 'ADD_LISTING'; payload: Listing }
   | { type: 'UPDATE_LISTING'; payload: Listing }
@@ -53,6 +54,7 @@ const initialState: ListingsState = {
     page: 1,
     limit: 10,
     total: 0,
+    pages: 0,
   },
   filters: {},
 };
@@ -68,6 +70,7 @@ const listingsReducer = (state: ListingsState, action: ListingsAction): Listings
         pagination: {
           ...state.pagination,
           total: action.payload.total,
+          pages: action.payload.pages,
           page: action.payload.page,
         },
         loading: false,
@@ -110,13 +113,15 @@ export const ListingsProvider = ({ children }: { children: ReactNode }) => {
 
       // Handle nested response structure
       const listings = response.data?.data?.listings || response.data?.listings || [];
-      const total = response.data?.data?.total || response.data?.total || 0;
+      const total = response.data?.data?.pagination?.total || response.data?.pagination?.total || response.data?.data?.total || response.data?.total || 0;
+      const pages = response.data?.data?.pagination?.pages || response.data?.pagination?.pages || Math.ceil(total / state.pagination.limit);
 
       dispatch({
         type: 'SET_LISTINGS',
         payload: {
           listings,
           total,
+          pages,
           page,
         },
       });
@@ -129,17 +134,16 @@ export const ListingsProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchCategories = async () => {
     try {
-
       const response = await api.get('/categories');
       console.log('Full API response:', response.data);
+      
       // Handle the nested response structure from your backend
       const categories = response.data?.data?.categories || response.data?.categories || [];
-
 
       dispatch({ type: 'SET_CATEGORIES', payload: categories });
     } catch (error) {
       console.error('Error fetching categories:', error);
-      dispatch({ type: 'SET_CATEGORIES', payload: [] }); // Set empty array on error
+      dispatch({ type: 'SET_CATEGORIES', payload: [] });
     }
   };
 
@@ -147,11 +151,20 @@ export const ListingsProvider = ({ children }: { children: ReactNode }) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const response = await api.get(`/listings/search?q=${encodeURIComponent(query)}`);
+      
+      console.log('Search response:', response.data);
+      
+      // Extract listings properly
+      const listings = response.data?.data?.listings || response.data?.listings || [];
+      const total = response.data?.data?.pagination?.total || response.data?.pagination?.total || response.data?.data?.total || response.data?.total || listings.length;
+      const pages = response.data?.data?.pagination?.pages || response.data?.pagination?.pages || Math.ceil(total / state.pagination.limit);
+      
       dispatch({
         type: 'SET_LISTINGS',
         payload: {
-          listings: response.data.listings,
-          total: response.data.total,
+          listings,
+          total,
+          pages,
           page: 1,
         },
       });
@@ -159,61 +172,63 @@ export const ListingsProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Error searching listings:', error);
       toast.error('Search failed');
+      dispatch({
+        type: 'SET_LISTINGS',
+        payload: { listings: [], total: 0, pages: 0, page: 1 }
+      });
     }
   };
 
-  // Update the filterByCategory function to properly query backend
-const filterByCategory = async (categoryId: string) => {
-  dispatch({ type: 'SET_LOADING', payload: true });
-  try {
-    console.log('Filtering by category ID:', categoryId); // DEBUG
-    
-    const response = await api.get(`/listings?category=${categoryId}`);
-    console.log('Filter response:', response.data); // DEBUG
-    
-    // Extract listings from response
-    const listings = response.data?.data?.listings || response.data?.listings || [];
-    const total = response.data?.data?.total || response.data?.total || 0;
-    
-    console.log('Filtered listings count:', listings.length); // DEBUG
-    console.log('Listings:', listings.map((l: { _id: any; title: any; category: any; }) => ({ id: l._id, title: l.title, category: l.category }))); // DEBUG
-    
-    dispatch({
-      type: 'SET_LISTINGS',
-      payload: {
-        listings,
-        total,
-        page: 1,
-      },
-    });
-    dispatch({ type: 'SET_FILTERS', payload: { category: categoryId } });
-  } catch (error) {
-    console.error('Error filtering by category:', error);
-    toast.error('Failed to load category listings');
-    dispatch({ type: 'SET_LOADING', payload: false });
-  }
-};
+  const filterByCategory = async (categoryId: string) => {
+    dispatch({ type: 'SET_LOADING', payload: true });
+    try {
+      console.log('Filtering by category ID:', categoryId);
+      
+      const response = await api.get(`/listings?category=${categoryId}`);
+      console.log('Filter response:', response.data);
+      
+      // Extract listings from response
+      const listings = response.data?.data?.listings || response.data?.listings || [];
+      const total = response.data?.data?.pagination?.total || response.data?.pagination?.total || response.data?.data?.total || response.data?.total || listings.length;
+      const pages = response.data?.data?.pagination?.pages || response.data?.pagination?.pages || Math.ceil(total / state.pagination.limit);
+      
+      console.log('Filtered listings count:', listings.length);
+      
+      dispatch({
+        type: 'SET_LISTINGS',
+        payload: {
+          listings,
+          total,
+          pages,
+          page: 1,
+        },
+      });
+      dispatch({ type: 'SET_FILTERS', payload: { category: categoryId } });
+    } catch (error) {
+      console.error('Error filtering by category:', error);
+      toast.error('Failed to load category listings');
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
 
   const createListing = async (data: any, hasImages: boolean): Promise<boolean> => {
-  try {
-    const response = await api.post('/listings', data, {
-      headers: { 
-        'Content-Type': hasImages ? 'multipart/form-data' : 'application/json'
-      },
-    });
+    try {
+      const response = await api.post('/listings', data, {
+        headers: { 
+          'Content-Type': hasImages ? 'multipart/form-data' : 'application/json'
+        },
+      });
 
-    const newListing = response.data?.data?.listing;
-    dispatch({ type: 'ADD_LISTING', payload: newListing });
-    toast.success('Listing created successfully!');
-    return true;
-  } catch (error) {
-    console.error('Error creating listing:', error);
-    toast.error('Failed to create listing');
-    return false;
-  }
-};
-
-
+      const newListing = response.data?.data?.listing;
+      dispatch({ type: 'ADD_LISTING', payload: newListing });
+      toast.success('Listing created successfully!');
+      return true;
+    } catch (error) {
+      console.error('Error creating listing:', error);
+      toast.error('Failed to create listing');
+      return false;
+    }
+  };
 
   const updateListing = async (id: string, data: any): Promise<boolean> => {
     try {

@@ -13,6 +13,7 @@ const listingRoutes = require('./routes/listings');
 const categoryRoutes = require('./routes/categories');
 const chatRoutes = require('./routes/chat');
 const adminRoutes = require('./routes/admin');
+const contactRoutes = require('./routes/contact');
 
 // Import socket handler
 const chatSocket = require('./socket/chatSocket');
@@ -75,6 +76,7 @@ app.use('/api/listings', listingRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Socket.IO connection handling
 chatSocket(io);
